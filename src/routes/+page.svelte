@@ -1,8 +1,10 @@
 <script>
-	import { createQuery } from '@tanstack/svelte-query';
+	import { useQueryClient, createQuery } from '@tanstack/svelte-query';
+	const queryClient = useQueryClient();
+	import Squares from '../components/Squares.svelte';
 	const query = createQuery({
 		queryKey: ['posts'],
-		queryFn: () => fetch(`https://api-ddb.place4pals.com/posts`).then((res) => res.json())
+		queryFn: () => fetch(`https://lambda.place4pals.com/public/posts`).then((res) => res.json())
 	});
 	const showComments = {};
 	const localeStringOptions = {
@@ -14,6 +16,7 @@
 		minute: 'numeric',
 		hour12: true
 	};
+	let introModal = true;
 </script>
 
 <svelte:head>
@@ -21,29 +24,49 @@
 	<meta name="description" content="non-profit social media" />
 </svelte:head>
 
-<div style="display:flex;flex-direction:row;margin:10px;align-items:center;">
-	<a
-		href="/"
-		style="display:flex;flex-direction:row;justify-content:center;align-items:center;text-decoration-line:none;font-size:24px;color:#000;margin-right:10px;"
-	>
-		<img alt="" style="height:30px;width:30px;margin-right:5px;" src="/favicon.png" />place4pals
-	</a>
-	<a style="margin:0px 10px;" href="/">= Feed</a>
-	<a style="margin:0px 10px;" href="pools">≈ Pools</a>
-	<a style="margin:0px 10px;" href="chat">⇆ Chat</a>
-	<a style="margin:0px 10px;" href="profile">▢ Profile</a>
-	<button style="margin:0px 10px;">+ Add post</button>
-	<input style="width:300px;" placeholder="🔍 Search" />
-</div>
-
+{#if introModal}
+	<div style="margin-bottom:10px;background-color:#eee;padding: 10px;border-radius:10px;">
+		<a
+			on:click={() => (introModal = false)}
+			style="text-decoration-line:none;position:absolute;right:20px;height:30px;width:30px;display:flex;justify-content:center;align-items:center;"
+			href="">×</a
+		>
+		Welcome to <b>place4pals</b>, a 501(c)(3) registered non-profit social media platform.
+		<br /><br />
+		{`Today's social media platforms have become plagued with advertisements that obscure community-generated content. Furthermore, privacy concerns have risen to the surface, with more users wishing not to be tracked or have their personal data sold. We want to fill the gap and create a non-profit social media alternative where privacy is paramount and users are no longer considered the product. Our incorporation as a non-profit entity helps ensure that our goals are aligned with our users. We believe that the current monetization practices used in the for-profit social media industry have ultimately harmed users and weakened their social media experience. The algorithms that operate modern social feeds push down the voices of the community and artificially prop up promoted content. By creating a non-profit alternative, users can find respite in a platform that is not hell-bent on aggregating and selling their data.`}
+		<br /><br />
+		<a href="">Create an account</a> to start adding posts and comments, or simply keep lurking
+		below.
+		<Squares />
+	</div>
+{/if}
 {#if $query.isLoading}
-	<div style="margin:10px;">...</div>
+	<div class="loader">
+		<div />
+		<div />
+		<div />
+		<div />
+	</div>
 {:else}
 	{#each $query.data as { id, name, date, content, user, comments }}
 		<div style="margin-bottom:10px;background-color:#e9f7ff;padding: 10px;border-radius:10px;">
+			<a
+				on:click={async () => {
+					const confirm = window.confirm(`Are you sure you want to delete "${name}"?`);
+					if (confirm) {
+						await fetch(`https://lambda.place4pals.com/public/posts`, {
+							method: 'DELETE',
+							body: JSON.stringify({ id })
+						});
+						queryClient.refetchQueries({ queryKey: ['posts'] });
+					}
+				}}
+				style="text-decoration-line:none;position:absolute;right:20px;height:30px;width:30px;display:flex;justify-content:center;align-items:center;"
+				href="">×</a
+			>
 			<div style="font-size:12px;">
-				<a style="font-size:20px;" href="/post/{id}">{name}</a> by
-				<a href="/user/{user.id}">{user.name}</a>
+				<a style="font-size:20px;" href="/posts/{id}">{name}</a> by
+				<a href="/users/{user.id}">{user.name}</a>
 			</div>
 			<div style="font-size:12px;color:#666;">
 				{new Date(date)
@@ -77,17 +100,17 @@
 									.map((obj, index) => `${index === 0 ? '🗓️ ' : ', 🕐 '}${obj}`)
 									.join('') + ' EST'}
 							>
-								<a href="user/{comment.user.id}">{comment.user.name}</a>: {comment.content}
+								<a href="/users/{comment.user.id}">{comment.user.name}</a>: {comment.content}
 								{#each comment.comments as comment}
 									<div
-										style="margin-left:20px;"
+										style="margin-left:20px;margin-top:5px;"
 										title={new Date(date)
 											.toLocaleString('en-US', localeStringOptions)
 											.split(' at ')
 											.map((obj, index) => `${index === 0 ? '🗓️ ' : ', 🕐 '}${obj}`)
 											.join('') + ' EST'}
 									>
-										<a href="user/{comment.user.id}">{comment.user.name}</a>: {comment.content}
+										<a href="/users/{comment.user.id}">{comment.user.name}</a>: {comment.content}
 									</div>
 								{/each}
 							</div>
