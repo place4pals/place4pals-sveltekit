@@ -75,7 +75,11 @@
 					.map((obj, index) => `${index === 0 ? '🗓️ ' : ', 🕐 '}${obj}`)
 					.join('') + ' EST'}
 			</div>
-			<div style="margin: 10px 0px;">{content}</div>
+			<div style="margin: 10px 0px;">
+				{#each content.split('\n\n') as paragraph}
+					<p>{paragraph}</p>
+				{/each}
+			</div>
 			<div>
 				<a
 					href=""
