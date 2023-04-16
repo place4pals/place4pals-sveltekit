@@ -19,7 +19,7 @@
 </script>
 
 <QueryClientProvider client={queryClient}>
-	<div>
+	<div style="min-height:calc(100vh - 40px);">
 		<div
 			style="display:flex;flex-direction:row;padding:10px;align-items:center;position:fixed;background-color:#ffffffee;width:100%;z-index:100;"
 		>
@@ -88,7 +88,7 @@
 					<input id="files" type="file" />
 				</div>
 				<div style="display:flex;flex-direction:row;gap:10px;align-self:flex-end;">
-					<a href="" on:click={(addPostModal = false)}>Cancel</a>
+					<a href="javascript:void(0)" on:click={(addPostModal = false)}>Cancel</a>
 					<button on:click={addPost}>Submit</button>
 				</div>
 			</div>
@@ -97,6 +97,10 @@
 		<div style="padding:10px;">
 			<slot />
 		</div>
+	</div>
+
+	<div style="text-align:center;font-size:12px;color:#aaa;margin-top:auto;margin-bottom:20px;">
+		Copyright © {new Date().getFullYear()} place4pals inc
 	</div>
 </QueryClientProvider>
 

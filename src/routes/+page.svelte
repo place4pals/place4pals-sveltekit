@@ -1,4 +1,8 @@
 <script>
+	let introModal = false;
+	if (typeof localStorage !== 'undefined') {
+		introModal = localStorage?.getItem('introModal') ? false : true;
+	}
 	import { useQueryClient, createQuery } from '@tanstack/svelte-query';
 	const queryClient = useQueryClient();
 	import Squares from '../components/Squares.svelte';
@@ -16,7 +20,6 @@
 		minute: 'numeric',
 		hour12: true
 	};
-	let introModal = true;
 </script>
 
 <svelte:head>
@@ -26,18 +29,21 @@
 
 {#if introModal}
 	<div style="margin-bottom:10px;background-color:#eee;padding: 10px;border-radius:10px;">
+		<div style="float:right;margin-right:20px;transform:scale(0.75);margin-top:-13px;">
+			<Squares />
+		</div>
 		<a
-			on:click={() => (introModal = false)}
+			on:click={() => {
+				introModal = false;
+				localStorage.setItem('introModal', '1');
+			}}
 			style="text-decoration-line:none;position:absolute;right:20px;height:30px;width:30px;display:flex;justify-content:center;align-items:center;"
-			href="">×</a
+			href="javascript:void(0)">×</a
 		>
 		Welcome to <b>place4pals</b>, a 501(c)(3) registered non-profit social media platform.
 		<br /><br />
-		{`Today's social media platforms have become plagued with advertisements that obscure community-generated content. Furthermore, privacy concerns have risen to the surface, with more users wishing not to be tracked or have their personal data sold. We want to fill the gap and create a non-profit social media alternative where privacy is paramount and users are no longer considered the product. Our incorporation as a non-profit entity helps ensure that our goals are aligned with our users. We believe that the current monetization practices used in the for-profit social media industry have ultimately harmed users and weakened their social media experience. The algorithms that operate modern social feeds push down the voices of the community and artificially prop up promoted content. By creating a non-profit alternative, users can find respite in a platform that is not hell-bent on aggregating and selling their data.`}
-		<br /><br />
-		<a href="">Create an account</a> to start adding posts and comments, or simply keep lurking
-		below.
-		<Squares />
+		<a href="javascript:void(0)">Create an account</a> to start adding posts and comments, or simply
+		keep lurking below.
 	</div>
 {/if}
 {#if $query.isLoading}
@@ -62,7 +68,7 @@
 					}
 				}}
 				style="text-decoration-line:none;position:absolute;right:20px;height:30px;width:30px;display:flex;justify-content:center;align-items:center;"
-				href="">×</a
+				href="javascript:void(0)">×</a
 			>
 			<div style="font-size:12px;">
 				<a style="font-size:20px;" href="/posts/{id}">{name}</a> by
@@ -82,7 +88,7 @@
 			</div>
 			<div>
 				<a
-					href=""
+					href="javascript:void(0)"
 					on:click={() => {
 						showComments[id] = !showComments[id];
 					}}
@@ -129,6 +135,3 @@
 		</div>
 	{/each}
 {/if}
-
-<style>
-</style>

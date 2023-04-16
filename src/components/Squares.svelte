@@ -3,7 +3,7 @@
 	import { expoOut } from 'svelte/easing';
 </script>
 
-<div style="display:flex;flex-direction: row; justify-content: flex-start;margin-top:20px;">
+<div style="display:flex;flex-direction: row; justify-content: flex-start;">
 	<div
 		in:fly={{
 			delay: 0,
