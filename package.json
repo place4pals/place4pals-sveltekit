@@ -24,6 +24,7 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"@tanstack/svelte-query": "^4.29.1"
+		"@tanstack/svelte-query": "^4.29.1",
+		"aws-amplify": "^5.1.2"
 	}
 }

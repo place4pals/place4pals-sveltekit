@@ -1,14 +1,24 @@
 <script>
+	import { page } from '$app/stores';
 	let introModal = false;
 	if (typeof localStorage !== 'undefined') {
-		introModal = localStorage?.getItem('introModal') ? false : true;
+		introModal = localStorage?.getItem('introModal')
+			? false
+			: localStorage?.getItem('amplify-signin-with-hostedUI')
+			? false
+			: true;
 	}
 	import { useQueryClient, createQuery } from '@tanstack/svelte-query';
 	const queryClient = useQueryClient();
 	import Squares from '../components/Squares.svelte';
+	import LoginModal from '../components/LoginModal.svelte';
+	import SignupModal from '../components/SignupModal.svelte';
+	import ConfirmModal from '../components/ConfirmModal.svelte';
+	import Loader from '../components/Loader.svelte';
+	import { API } from '@aws-amplify/api';
 	const query = createQuery({
 		queryKey: ['posts'],
-		queryFn: () => fetch(`https://lambda.place4pals.com/public/posts`).then((res) => res.json())
+		queryFn: () => API.get('public', '/posts', {})
 	});
 	const showComments = {};
 	const localeStringOptions = {
@@ -20,6 +30,9 @@
 		minute: 'numeric',
 		hour12: true
 	};
+	let loginModal = false;
+	let signupModal = false;
+	let confirmModal = $page.url.searchParams.get('code') ? true : false;
 </script>
 
 <svelte:head>
@@ -40,10 +53,18 @@
 			style="text-decoration-line:none;position:absolute;right:20px;height:30px;width:30px;display:flex;justify-content:center;align-items:center;"
 			href="javascript:void(0)">×</a
 		>
-		Welcome to <b>place4pals</b>, a 501(c)(3) registered non-profit social media platform.
-		<br /><br />
-		<a href="signup">Create an account</a> to start adding posts and comments,
-		<a href="login">sign in</a> if you already have an account, or simply keep lurking below.
+		<div>
+			Welcome to <b>place4pals</b>, a 501(c)(3) registered non-profit social media platform.
+			<br /><br />
+			<a href="javascript:void(0)" on:click={() => (signupModal = true)}>Create an account</a> to
+			start adding posts and comments,
+			<a
+				href="javascript:void(0)"
+				on:click={() => {
+					loginModal = true;
+				}}>sign in</a
+			> if you already have an account, or simply keep lurking below.
+		</div>
 	</div>
 {/if}
 <div
@@ -67,12 +88,7 @@
 	</div>
 </div>
 {#if $query.isLoading}
-	<div class="loader">
-		<div />
-		<div />
-		<div />
-		<div />
-	</div>
+	<Loader />
 {:else}
 	{#each $query.data as { id, name, date, content, user, comments }}
 		<div style="margin-bottom:10px;background-color:#e9f7ff;padding: 10px;border-radius:10px;">
@@ -162,3 +178,6 @@
 		</div>
 	{/each}
 {/if}
+<LoginModal bind:showModal={loginModal} />
+<SignupModal bind:showModal={signupModal} />
+<ConfirmModal bind:showModal={confirmModal} />

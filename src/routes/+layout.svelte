@@ -1,8 +1,52 @@
 <script>
-	import './styles.css';
+	import { Environment } from './Environment';
+	import { Amplify } from '@aws-amplify/core';
+	import { Auth } from '@aws-amplify/auth';
+	import { API } from '@aws-amplify/api';
 	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
 	import { clickOutside } from '../scripts/clickOutside.js';
 	import { page } from '$app/stores';
+	import './styles.css';
+
+	Amplify.configure({
+		Auth: {
+			identityPoolId: Environment.identityPoolId,
+			region: Environment.region,
+			identityPoolRegion: Environment.region,
+			userPoolId: Environment.userPoolId,
+			userPoolWebClientId: Environment.userPoolWebClientId,
+			mandatorySignIn: true,
+			authenticationFlowType: 'USER_PASSWORD_AUTH',
+			signUpVerificationMethod: 'link'
+		},
+		API: {
+			endpoints: [
+				{
+					name: 'public',
+					endpoint: Environment.endpoint + '/public',
+					region: Environment.region
+				},
+				{
+					name: 'auth',
+					endpoint: Environment.endpoint + '/auth',
+					region: Environment.region,
+					custom_header: async () => ({
+						Authorization: 'Bearer ' + (await Auth.currentSession()).getIdToken().getJwtToken()
+					})
+				}
+			]
+		},
+		Storage: {
+			AWSS3: {
+				bucket: Environment.bucket,
+				region: Environment.region
+			}
+		},
+		Analytics: {
+			disabled: true
+		}
+	});
+
 	const queryClient = new QueryClient();
 	let addPostModal = false;
 	let title = '';
@@ -10,10 +54,7 @@
 	let addingPost = false;
 	const addPost = async () => {
 		addingPost = true;
-		await fetch('https://lambda.place4pals.com/public/posts', {
-			method: 'POST',
-			body: JSON.stringify({ title, content })
-		});
+		await API.post('auth', '/posts', { body: { title, content } });
 		queryClient.refetchQueries({ queryKey: ['posts'] });
 		addingPost = false;
 		addPostModal = false;
@@ -124,6 +165,3 @@
 		Copyright © {new Date().getFullYear()} place4pals inc
 	</div>
 </QueryClientProvider>
-
-<style>
-</style>
