@@ -16,9 +16,11 @@
 	import ConfirmModal from '../components/ConfirmModal.svelte';
 	import Loader from '../components/Loader.svelte';
 	import { API } from '@aws-amplify/api';
+	import { Auth } from '@aws-amplify/auth';
 	const query = createQuery({
 		queryKey: ['posts'],
-		queryFn: () => API.get('public', '/posts', {})
+		queryFn: () => API.get('public', '/posts', {}),
+		refetchInterval: 500
 	});
 	const showComments = {};
 	const localeStringOptions = {
@@ -33,6 +35,17 @@
 	let loginModal = false;
 	let signupModal = false;
 	let confirmModal = $page.url.searchParams.get('code') ? true : false;
+	let userId, username;
+	const async = async () => {
+		try {
+			const user = (await Auth.currentSession()).getIdToken().payload;
+			userId = user.profile;
+			username = user.preferred_username;
+		} catch (err) {}
+	};
+	async();
+	let postedTyping = false;
+	let stopTypingTimeout;
 </script>
 
 <svelte:head>
@@ -90,7 +103,7 @@
 {#if $query.isLoading}
 	<Loader />
 {:else}
-	{#each $query.data as { id, name, date, content, user, comments }}
+	{#each $query.data as { id, name, date, content, user, comments, typing }}
 		<div style="margin-bottom:10px;background-color:#e9f7ff;padding: 10px;border-radius:10px;">
 			<a
 				on:click={async () => {
@@ -147,13 +160,26 @@
 					{:else}
 						{#each comments as comment}
 							<div
+								style="margin-bottom:5px;"
 								title={new Date(date)
 									.toLocaleString('en-US', localeStringOptions)
 									.split(' at ')
 									.map((obj, index) => `${index === 0 ? '🗓️ ' : ', 🕐 '}${obj}`)
 									.join('') + ' EST'}
 							>
-								<a href="/users/{comment.user.id}">{comment.user.name}</a>: {comment.content}
+								<a style="font-weight:bold" href="/users/{comment.user.id}">{comment.user.name}</a>: {comment.content}
+								{#if comment.user.id === userId}
+									<a
+										on:click={async () => {
+											await API.del('auth', '/comments', {
+												body: { postId: id, commentId: comment.id }
+											});
+											queryClient.refetchQueries({ queryKey: ['posts'] });
+										}}
+										style="display: inline-block;"
+										href="javascript:void(0)">×</a
+									>
+								{/if}
 								{#each comment.comments as comment}
 									<div
 										style="margin-left:20px;margin-top:5px;"
@@ -163,16 +189,51 @@
 											.map((obj, index) => `${index === 0 ? '🗓️ ' : ', 🕐 '}${obj}`)
 											.join('') + ' EST'}
 									>
-										<a href="/users/{comment.user.id}">{comment.user.name}</a>: {comment.content}
+										<a style="font-weight:bold" href="/users/{comment.user.id}"
+											>{comment.user.name}</a
+										>: {comment.content}
 									</div>
 								{/each}
 							</div>
 						{/each}
 					{/if}
-					<input
-						style="margin-top:5px;padding:5px;width:calc(100% - 15px);"
-						placeholder="Add a comment"
-					/>
+					{#if typing?.filter((obj) => obj !== username)?.length}
+						<div style="margin-bottom:5px;color:#666;">
+							{typing.filter((obj) => obj !== username).join(',')}
+							{typing.length === 1 ? 'is' : 'are'} typing...
+						</div>
+					{/if}
+					<form
+						on:submit={async (e) => {
+							e.preventDefault();
+							const formData = new FormData(e.target);
+							await API.post('auth', '/comments', {
+								body: { postId: id, content: formData.get('comment')?.toString() }
+							});
+							queryClient.refetchQueries({ queryKey: ['posts'] });
+							e.target.reset();
+						}}
+					>
+						<input
+							on:keydown={async () => {
+								clearTimeout(stopTypingTimeout);
+								stopTypingTimeout = setTimeout(async () => {
+									await API.del('auth', '/typing', { body: { postId: id } });
+								}, 500);
+
+								if (!postedTyping) {
+									postedTyping = true;
+									await API.post('auth', '/typing', { body: { postId: id } });
+									setTimeout(() => {
+										postedTyping = false;
+									}, 500);
+								}
+							}}
+							name="comment"
+							style="padding:5px;width:calc(100% - 15px);"
+							placeholder="Add a comment"
+						/>
+					</form>
 				</div>
 			{/if}
 		</div>
