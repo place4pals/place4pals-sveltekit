@@ -51,16 +51,29 @@
 	let addPostModal = false;
 	let title = '';
 	let content = '';
+	let media;
 	let addingPost = false;
 	const addPost = async () => {
 		addingPost = true;
-		await API.post('auth', '/posts', { body: { title, content } });
+		let mediaBase64, mediaContentType;
+		if (media) {
+			mediaBase64 = await toBase64(media);
+			mediaContentType = media.type;
+		}
+		await API.post('auth', '/posts', { body: { title, content, mediaBase64, mediaContentType } });
 		queryClient.refetchQueries({ queryKey: ['posts'] });
 		addingPost = false;
 		addPostModal = false;
 		title = '';
 		content = '';
 	};
+	const toBase64 = (file) =>
+		new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.readAsDataURL(file);
+			reader.onload = () => resolve(reader.result);
+			reader.onerror = (error) => reject(error);
+		});
 </script>
 
 <QueryClientProvider client={queryClient}>
@@ -142,7 +155,13 @@
 				/>
 				<div style="margin:10px;align-self:flex-start;">
 					<label for="files" class="btn">Upload media:</label>
-					<input id="files" type="file" />
+					<input
+						id="files"
+						type="file"
+						on:change={(e) => {
+							media = e.target.files[0];
+						}}
+					/>
 				</div>
 				<div style="display:flex;flex-direction:row;gap:10px;align-self:flex-end;">
 					<a

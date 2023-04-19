@@ -19,8 +19,7 @@
 	import { Auth } from '@aws-amplify/auth';
 	const query = createQuery({
 		queryKey: ['posts'],
-		queryFn: () => API.get('public', '/posts', {}),
-		refetchInterval: 500
+		queryFn: () => API.get('public', '/posts', {})
 	});
 	const showComments = {};
 	const localeStringOptions = {
@@ -46,6 +45,7 @@
 	async();
 	let postedTyping = false;
 	let stopTypingTimeout;
+	let focusedPostInterval;
 </script>
 
 <svelte:head>
@@ -103,8 +103,29 @@
 {#if $query.isLoading}
 	<Loader />
 {:else}
-	{#each $query.data as { id, name, date, content, user, comments, typing }}
-		<div style="margin-bottom:10px;background-color:#e9f7ff;padding: 10px;border-radius:10px;">
+	{#each $query.data as { id, name, date, content, user, comments, typing, media }}
+		<div
+			on:mouseleave={() => clearInterval(focusedPostInterval)}
+			on:mouseenter={async () => {
+				// clearInterval(focusedPostInterval);
+				// focusedPostInterval = setInterval(async () => {
+				// 	const focusedPost = await queryClient.fetchQuery({
+				// 		queryKey: [id],
+				// 		queryFn: () => API.get('auth', '/posts', { queryStringParameters: { id } })
+				// 	});
+				// 	queryClient.setQueryData(['posts'], () =>
+				// 		$query.data.map((obj) => {
+				// 			if (obj.id === id) {
+				// 				return focusedPost[0];
+				// 			} else {
+				// 				return obj;
+				// 			}
+				// 		})
+				// 	);
+				// }, 500);
+			}}
+			style="margin-bottom:10px;background-color:#e9f7ff;padding: 10px;border-radius:10px;"
+		>
 			<a
 				on:click={async () => {
 					const confirm = window.confirm(`Are you sure you want to delete "${name}"?`);
@@ -119,7 +140,11 @@
 				style="text-decoration-line:none;position:absolute;right:20px;height:30px;width:30px;display:flex;justify-content:center;align-items:center;"
 				href="javascript:void(0)">×</a
 			>
-			<div
+			<img
+				alt=""
+				src={user.media
+					? `https://files.place4pals.com/public/${user.media}`
+					: 'https://staging.place4pals.com/blank.jpg'}
 				style="height:38px;width:38px;float:left;border:1px solid #666;border-radius:10px;margin-right:5px;background-color:#fff;"
 			/>
 			<div style="font-size:12px;">
@@ -134,6 +159,9 @@
 					.join('') + ' EST'}
 			</div>
 			<div style="margin: 10px 0px;">
+				{#if media}
+					<img style="max-width:500px;" src="https://files.place4pals.com/public/{media}" />
+				{/if}
 				{#each content.split('\n\n') as paragraph}
 					<p>
 						{#each paragraph.split('\n') as linebreak}
@@ -152,6 +180,7 @@
 						? '+'
 						: '-'}]</a
 				>
+				<span style="margin:0px 5px;">•</span> Rating: ☆☆☆☆☆
 			</div>
 			{#if showComments[id]}
 				<div style="margin-top:10px;">
