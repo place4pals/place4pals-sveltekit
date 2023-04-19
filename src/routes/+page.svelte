@@ -42,10 +42,30 @@
 		>
 		Welcome to <b>place4pals</b>, a 501(c)(3) registered non-profit social media platform.
 		<br /><br />
-		<a href="javascript:void(0)">Create an account</a> to start adding posts and comments, or simply
-		keep lurking below.
+		<a href="signup">Create an account</a> to start adding posts and comments,
+		<a href="login">sign in</a> if you already have an account, or simply keep lurking below.
 	</div>
 {/if}
+<div
+	style="margin-bottom:10px;background-color:#eee;padding: 10px;border-radius:10px;display:flex;flex-direction:row;gap:10px;"
+>
+	<div>
+		<label for="sort" class="btn">Sort by:</label>
+		<select id="sort">
+			{#each ['Newest', 'Highest rating', 'Oldest', 'Lowest rating'] as obj}
+				<option value={obj}>{obj}</option>
+			{/each}
+		</select>
+	</div>
+	<div>
+		<label for="sort" class="btn">Date range:</label>
+		<select id="sort">
+			{#each ['All time', 'Last hour', 'Last day', 'Last week', 'Last month', 'Last year'] as obj}
+				<option value={obj}>{obj}</option>
+			{/each}
+		</select>
+	</div>
+</div>
 {#if $query.isLoading}
 	<div class="loader">
 		<div />
@@ -70,6 +90,9 @@
 				style="text-decoration-line:none;position:absolute;right:20px;height:30px;width:30px;display:flex;justify-content:center;align-items:center;"
 				href="javascript:void(0)">×</a
 			>
+			<div
+				style="height:38px;width:38px;float:left;border:1px solid #666;border-radius:10px;margin-right:5px;background-color:#fff;"
+			/>
 			<div style="font-size:12px;">
 				<a style="font-size:20px;" href="/posts/{id}">{name}</a> by
 				<a href="/users/{user.id}">{user.name}</a>
@@ -83,7 +106,11 @@
 			</div>
 			<div style="margin: 10px 0px;">
 				{#each content.split('\n\n') as paragraph}
-					<p>{paragraph}</p>
+					<p>
+						{#each paragraph.split('\n') as linebreak}
+							{linebreak}<br />
+						{/each}
+					</p>
 				{/each}
 			</div>
 			<div>

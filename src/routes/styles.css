@@ -5,6 +5,29 @@ body {
 	overflow-y: scroll;
 }
 
+.navLink {
+	color: #aaa;
+	margin: 0px 10px;
+	margin-top: 4px;
+}
+.navLink:hover {
+	box-shadow: 0px 2px #aaa;
+	text-decoration-line: none;
+}
+
+.active {
+	box-shadow: 0px 2px black !important;
+	color: black;
+}
+
+a {
+	text-decoration-line: none;
+}
+
+a:hover {
+	text-decoration-line: underline;
+}
+
 .loader {
 	display: flex;
 	height: 100%;

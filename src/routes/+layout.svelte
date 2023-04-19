@@ -2,16 +2,20 @@
 	import './styles.css';
 	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
 	import { clickOutside } from '../scripts/clickOutside.js';
+	import { page } from '$app/stores';
 	const queryClient = new QueryClient();
 	let addPostModal = false;
 	let title = '';
 	let content = '';
+	let addingPost = false;
 	const addPost = async () => {
+		addingPost = true;
 		await fetch('https://lambda.place4pals.com/public/posts', {
 			method: 'POST',
 			body: JSON.stringify({ title, content })
 		});
 		queryClient.refetchQueries({ queryKey: ['posts'] });
+		addingPost = false;
 		addPostModal = false;
 		title = '';
 		content = '';
@@ -21,7 +25,7 @@
 <QueryClientProvider client={queryClient}>
 	<div style="min-height:calc(100vh - 40px);">
 		<div
-			style="display:flex;flex-direction:row;padding:10px;align-items:center;position:fixed;background-color:#ffffffee;width:100%;z-index:100;"
+			style="display:flex;flex-direction:row;padding:10px;align-items:center;position:fixed;background-color:#ffffff66;width:100%;z-index:100;backdrop-filter: blur(10px);"
 		>
 			<a
 				href="/"
@@ -29,10 +33,16 @@
 			>
 				<img alt="" style="height:30px;width:30px;margin-right:5px;" src="/favicon.png" />place4pals
 			</a>
-			<a style="margin:0px 10px;" href="/">= Feed</a>
-			<a style="margin:0px 10px;" href="pools">≈ Pools</a>
-			<a style="margin:0px 10px;" href="chat">⇆ Chat</a>
-			<a style="margin:0px 10px;" href="profile">▢ Profile</a>
+			<a class="navLink {$page.url.pathname === '/' ? 'active' : ''}" href="/">= Feed</a>
+			<a class="navLink {$page.url.pathname.startsWith('/pools') ? 'active' : ''}" href="pools"
+				>≈ Pools</a
+			>
+			<a class="navLink {$page.url.pathname.startsWith('/chat') ? 'active' : ''}" href="chat"
+				>⇆ Chat</a
+			>
+			<a class="navLink {$page.url.pathname.startsWith('/profile') ? 'active' : ''}" href="profile"
+				>▢ Profile</a
+			>
 			<button
 				style="margin:0px 10px;"
 				on:click={() => {
@@ -40,6 +50,12 @@
 				}}>+ Add post</button
 			>
 			<input style="width:300px;" placeholder="🔍 Search" />
+
+			<a
+				class="navLink {$page.url.pathname.startsWith('/notifications') ? 'active' : ''}"
+				style="margin-left:auto;margin-right:25px;"
+				href="notifications">⦿ Notifications (0)</a
+			>
 		</div>
 		{#if addPostModal}
 			<div
@@ -70,7 +86,7 @@
 				border-top: 1px solid #ccc;
 				border-right: 1px solid #ccc;
 				transform: rotate(-45deg);
-				margin-top: -19px;
+				margin-top: -18px;
 				background-color: #fff;"
 				/>
 				<input
@@ -80,7 +96,7 @@
 				/>
 				<textarea
 					bind:value={content}
-					style="width:calc(100% - 20px);height:400px;margin-top:10px;font-family:arial;padding:10px;"
+					style="width:calc(100% - 20px);height:400px;margin-top:10px;font-family:arial;padding:10px;resize:none;"
 					placeholder="Content"
 				/>
 				<div style="margin:10px;align-self:flex-start;">
@@ -88,8 +104,13 @@
 					<input id="files" type="file" />
 				</div>
 				<div style="display:flex;flex-direction:row;gap:10px;align-self:flex-end;">
-					<a href="javascript:void(0)" on:click={(addPostModal = false)}>Cancel</a>
-					<button on:click={addPost}>Submit</button>
+					<a
+						href="javascript:void(0)"
+						on:click={() => {
+							addPostModal = false;
+						}}>Cancel</a
+					>
+					<button disabled={addingPost} on:click={addPost}>Submit</button>
 				</div>
 			</div>
 		{/if}
