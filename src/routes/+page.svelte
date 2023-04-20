@@ -1,22 +1,11 @@
 <script>
-	import { page } from '$app/stores';
-	let introModal = false;
-	if (typeof localStorage !== 'undefined') {
-		introModal = localStorage?.getItem('introModal')
-			? false
-			: localStorage?.getItem('amplify-signin-with-hostedUI')
-			? false
-			: true;
-	}
 	import { useQueryClient, createQuery } from '@tanstack/svelte-query';
 	const queryClient = useQueryClient();
 	import Squares from '../components/Squares.svelte';
-	import LoginModal from '../components/LoginModal.svelte';
-	import SignupModal from '../components/SignupModal.svelte';
-	import ConfirmModal from '../components/ConfirmModal.svelte';
 	import Loader from '../components/Loader.svelte';
 	import { API } from '@aws-amplify/api';
-	import { Auth } from '@aws-amplify/auth';
+	import { userStore, modalStore, introStore } from '../stores';
+	import DeletingLoader from '../components/DeletingLoader.svelte';
 	const query = createQuery({
 		queryKey: ['posts'],
 		queryFn: () => API.get('public', '/posts', {})
@@ -31,37 +20,19 @@
 		minute: 'numeric',
 		hour12: true
 	};
-	let loginModal = false;
-	let signupModal = false;
-	let confirmModal = $page.url.searchParams.get('code') ? true : false;
-	let userId, username;
-	const async = async () => {
-		try {
-			const user = (await Auth.currentSession()).getIdToken().payload;
-			userId = user.profile;
-			username = user.preferred_username;
-		} catch (err) {}
-	};
-	async();
 	let postedTyping = false;
-	let stopTypingTimeout;
-	let focusedPostInterval;
+	let addingComment = false;
+	let deletingId = null;
 </script>
 
-<svelte:head>
-	<title>place4pals</title>
-	<meta name="description" content="non-profit social media" />
-</svelte:head>
-
-{#if introModal}
+{#if $introStore}
 	<div style="margin-bottom:10px;background-color:#eee;padding: 10px;border-radius:10px;">
 		<div style="float:right;margin-right:20px;transform:scale(0.75);margin-top:-13px;">
 			<Squares />
 		</div>
 		<a
 			on:click={() => {
-				introModal = false;
-				localStorage.setItem('introModal', '1');
+				introStore.set(0);
 			}}
 			style="text-decoration-line:none;position:absolute;right:20px;height:30px;width:30px;display:flex;justify-content:center;align-items:center;"
 			href="javascript:void(0)">×</a
@@ -69,13 +40,18 @@
 		<div>
 			Welcome to <b>place4pals</b>, a 501(c)(3) registered non-profit social media platform.
 			<br /><br />
-			<a href="javascript:void(0)" on:click={() => (signupModal = true)}>Create an account</a> to
-			start adding posts and comments,
 			<a
 				href="javascript:void(0)"
 				on:click={() => {
-					loginModal = true;
-				}}>sign in</a
+					modalStore.update((obj) => ({ ...obj, signupModal: true }));
+				}}>Sign up</a
+			>
+			to start adding posts and comments,
+			<a
+				href="javascript:void(0)"
+				on:click={() => {
+					modalStore.update((obj) => ({ ...obj, loginModal: true }));
+				}}>login</a
 			> if you already have an account, or simply keep lurking below.
 		</div>
 	</div>
@@ -104,42 +80,31 @@
 	<Loader />
 {:else}
 	{#each $query.data as { id, name, date, content, user, comments, typing, media }}
-		<div
-			on:mouseleave={() => clearInterval(focusedPostInterval)}
-			on:mouseenter={async () => {
-				// clearInterval(focusedPostInterval);
-				// focusedPostInterval = setInterval(async () => {
-				// 	const focusedPost = await queryClient.fetchQuery({
-				// 		queryKey: [id],
-				// 		queryFn: () => API.get('auth', '/posts', { queryStringParameters: { id } })
-				// 	});
-				// 	queryClient.setQueryData(['posts'], () =>
-				// 		$query.data.map((obj) => {
-				// 			if (obj.id === id) {
-				// 				return focusedPost[0];
-				// 			} else {
-				// 				return obj;
-				// 			}
-				// 		})
-				// 	);
-				// }, 500);
-			}}
-			style="margin-bottom:10px;background-color:#e9f7ff;padding: 10px;border-radius:10px;"
-		>
-			<a
-				on:click={async () => {
-					const confirm = window.confirm(`Are you sure you want to delete "${name}"?`);
-					if (confirm) {
-						await fetch(`https://lambda.place4pals.com/public/posts`, {
-							method: 'DELETE',
-							body: JSON.stringify({ id })
-						});
-						queryClient.refetchQueries({ queryKey: ['posts'] });
-					}
-				}}
-				style="text-decoration-line:none;position:absolute;right:20px;height:30px;width:30px;display:flex;justify-content:center;align-items:center;"
-				href="javascript:void(0)">×</a
-			>
+		<div style="margin-bottom:10px;background-color:#e9f7ff;padding: 10px;border-radius:10px;">
+			{#if user.id === $userStore.profile}
+				<div
+					style="text-decoration-line:none;position:absolute;right:20px;height:30px;width:30px;display:flex;justify-content:center;align-items:center;"
+				>
+					{#if deletingId === id}
+						<DeletingLoader />
+					{:else}
+						<a
+							on:click={async () => {
+								const confirm = window.confirm(`Are you sure you want to delete "${name}"?`);
+								if (confirm) {
+									deletingId = id;
+									await fetch(`https://lambda.place4pals.com/public/posts`, {
+										method: 'DELETE',
+										body: JSON.stringify({ id })
+									});
+									queryClient.refetchQueries({ queryKey: ['posts'] });
+								}
+							}}
+							href="javascript:void(0)">×</a
+						>
+					{/if}
+				</div>
+			{/if}
 			<img
 				alt=""
 				src={user.media
@@ -160,7 +125,7 @@
 			</div>
 			<div style="margin: 10px 0px;">
 				{#if media}
-					<img style="max-width:500px;" src="https://files.place4pals.com/public/{media}" />
+					<img class="postImage" src="https://files.place4pals.com/public/{media}" />
 				{/if}
 				{#each content.split('\n\n') as paragraph}
 					<p>
@@ -197,17 +162,22 @@
 									.join('') + ' EST'}
 							>
 								<a style="font-weight:bold" href="/users/{comment.user.id}">{comment.user.name}</a>: {comment.content}
-								{#if comment.user.id === userId}
-									<a
-										on:click={async () => {
-											await API.del('auth', '/comments', {
-												body: { postId: id, commentId: comment.id }
-											});
-											queryClient.refetchQueries({ queryKey: ['posts'] });
-										}}
-										style="display: inline-block;"
-										href="javascript:void(0)">×</a
-									>
+								{#if comment.user.id === $userStore.profile}
+									{#if deletingId === comment.id}
+										<DeletingLoader />
+									{:else}
+										<a
+											on:click={async () => {
+												deletingId = comment.id;
+												await API.del('auth', '/comments', {
+													body: { postId: id, commentId: comment.id }
+												});
+												queryClient.refetchQueries({ queryKey: ['posts'] });
+											}}
+											style="display: inline-block;"
+											href="javascript:void(0)">×</a
+										>
+									{/if}
 								{/if}
 								{#each comment.comments as comment}
 									<div
@@ -235,12 +205,18 @@
 					<form
 						on:submit={async (e) => {
 							e.preventDefault();
-							const formData = new FormData(e.target);
-							await API.post('auth', '/comments', {
-								body: { postId: id, content: formData.get('comment')?.toString() }
-							});
-							queryClient.refetchQueries({ queryKey: ['posts'] });
-							e.target.reset();
+							if ($userStore) {
+								addingComment = true;
+								const formData = new FormData(e.target);
+								await API.post('auth', '/comments', {
+									body: { postId: id, content: formData.get('comment')?.toString() }
+								});
+								await queryClient.refetchQueries({ queryKey: ['posts'] });
+								e.target.reset();
+								addingComment = false;
+							} else {
+								modalStore.update((obj) => ({ ...obj, signupModal: true }));
+							}
 						}}
 					>
 						<input
@@ -258,6 +234,7 @@
 									}, 500);
 								}
 							}}
+							disabled={addingComment}
 							name="comment"
 							style="padding:5px;width:calc(100% - 15px);"
 							placeholder="Add a comment"
@@ -268,6 +245,3 @@
 		</div>
 	{/each}
 {/if}
-<LoginModal bind:showModal={loginModal} />
-<SignupModal bind:showModal={signupModal} />
-<ConfirmModal bind:showModal={confirmModal} />

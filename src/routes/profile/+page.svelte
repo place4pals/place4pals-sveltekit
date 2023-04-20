@@ -2,14 +2,7 @@
 	import { Auth } from '@aws-amplify/auth';
 	import { API } from '@aws-amplify/api';
 	import { goto } from '$app/navigation';
-	let username;
-	const async = async () => {
-		try {
-			const user = (await Auth.currentSession()).getIdToken().payload;
-			username = user.preferred_username;
-		} catch (err) {}
-	};
-	async();
+	import { userStore } from '../../stores';
 
 	const toBase64 = (file) =>
 		new Promise((resolve, reject) => {
@@ -20,7 +13,7 @@
 		});
 </script>
 
-<div>Welcome, {username}</div>
+<div>Welcome, {$userStore.preferred_username}</div>
 
 <div style="margin:10px;align-self:flex-start;">
 	<label for="files" class="btn">Update profile picture:</label>
@@ -40,6 +33,7 @@
 <button
 	on:click={async () => {
 		Auth.signOut();
+		userStore.set(false);
 		goto('/');
 	}}>Log out</button
 >

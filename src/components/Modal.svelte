@@ -26,16 +26,16 @@
 
 <style>
 	dialog {
-		width: 400px;
-		border: 1px solid black;
+		width: 375px;
+		border: none;
 		border-radius: 10px;
-		padding: 10px;
+		padding: 30px 10px;
 	}
 	dialog::backdrop {
-		background: rgba(0, 0, 0, 0.3);
+		background: rgba(0, 0, 0, 0.5);
 	}
 	dialog > div {
-		padding: 20px;
+		padding: 5px;
 	}
 	.exit {
 		text-decoration-line: none;
@@ -47,5 +47,14 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
+		font-size: 24px;
+		color: blue;
+	}
+
+	@media only screen and (max-width: 600px) {
+		dialog {
+			width: 100vw;
+			margin-top: 80px;
+		}
 	}
 </style>

@@ -1,4 +1,5 @@
 <script>
+	import { userStore, modalStore} from '../stores';
 	import Modal from '../components/Modal.svelte';
 	import { Auth } from '@aws-amplify/auth';
 	export let showModal;
@@ -6,7 +7,9 @@
 	const submit = async () => {
 		loading = true;
 		try {
-			await Auth.signIn(username, password);
+			const user = await Auth.signIn(username, password);
+			console.log(user);
+			userStore.set(user.attributes);
 			loading = false;
 			dialog.close();
 		} catch (err) {
@@ -18,7 +21,7 @@
 	let password;
 	let dialog;
 	let loading = false;
-	let message = 'Welcome back, pal';
+	let message = 'Welcome back, pal!';
 </script>
 
 <Modal bind:showModal bind:dialog>
@@ -40,6 +43,26 @@
 				placeholder="Password"
 			/>
 			<button class="close" disabled={loading} style="padding:4p">Login</button>
+			<div>
+				Don't have an account?
+				<a
+					href="javascript:void(0)"
+					on:click={() => {
+						dialog.close();
+						modalStore.update((obj) => ({ ...obj, signupModal: true, loginModal: false }));
+					}}>Sign up here</a
+				>.
+			</div>
+			<div style="margin-top:-5px;">
+				Forget your password?
+				<a
+					href="javascript:void(0)"
+					on:click={() => {
+						dialog.close();
+						modalStore.update((obj) => ({ ...obj, resetModal: true, loginModal: false }));
+					}}>Reset it here</a
+				>.
+			</div>
 		</form>
 	</div>
 </Modal>

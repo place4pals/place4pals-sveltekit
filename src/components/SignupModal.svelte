@@ -1,4 +1,5 @@
 <script>
+	import { modalStore } from '../stores';
 	import Modal from '../components/Modal.svelte';
 	import { Auth } from '@aws-amplify/auth';
 	export let showModal;
@@ -40,7 +41,9 @@
 <Modal bind:showModal bind:dialog>
 	<div class="container">
 		{#if checkEmail}
-			<div class="title">Success! Please check your email- you must confirm your email address before logging in.</div>
+			<div class="title">
+				Success! Please check your email- you must confirm your email address before logging in.
+			</div>
 			<button
 				on:click={() => {
 					dialog.close();
@@ -49,16 +52,44 @@
 		{:else}
 			<div class="title">{message}</div>
 			<form class="form" on:submit={submit}>
-				<input class="input" disabled={loading} bind:value={username} type="text" placeholder="Username" />
-				<input class="input" disabled={loading} bind:value={email} type="email" placeholder="Email" />
-				<input class="input" disabled={loading} bind:value={password} type="password" placeholder="Password" />
+				<input
+					class="input"
+					disabled={loading}
+					bind:value={username}
+					type="text"
+					placeholder="Username"
+				/>
+				<input
+					class="input"
+					disabled={loading}
+					bind:value={email}
+					type="email"
+					placeholder="Email"
+				/>
+				<input
+					class="input"
+					disabled={loading}
+					bind:value={password}
+					type="password"
+					placeholder="Password"
+				/>
 				<div class="terms">
 					<label for="terms"
-						>I agree to the <a href="">Terms of Service</a> and <a href="">Privacy Policy</a></label
+						>I agree to the <a href="">Terms</a> and <a href="">Privacy Policy</a></label
 					>
 					<input id="terms" type="checkbox" />
 				</div>
 				<button class="submit" disabled={loading}>Sign up</button>
+				<div>
+					Already have an account?
+					<a
+						href="javascript:void(0)"
+						on:click={() => {
+							dialog.close();
+							modalStore.update((obj) => ({ ...obj, signupModal: false, loginModal: true }));
+						}}>Login here</a
+					>.
+				</div>
 			</form>
 		{/if}
 	</div>

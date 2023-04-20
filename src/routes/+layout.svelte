@@ -2,12 +2,15 @@
 	import { Environment } from './Environment';
 	import { Amplify } from '@aws-amplify/core';
 	import { Auth } from '@aws-amplify/auth';
-	import { API } from '@aws-amplify/api';
 	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
-	import { clickOutside } from '../scripts/clickOutside.js';
 	import { page } from '$app/stores';
 	import './styles.css';
-
+	import AddPostModal from '../components/AddPostModal.svelte';
+	import LoginModal from '../components/LoginModal.svelte';
+	import SignupModal from '../components/SignupModal.svelte';
+	import ConfirmModal from '../components/ConfirmModal.svelte';
+	import { userStore, modalStore } from '../stores.js';
+	import InnerLoader from '../components/InnerLoader.svelte';
 	Amplify.configure({
 		Auth: {
 			identityPoolId: Environment.identityPoolId,
@@ -48,44 +51,35 @@
 	});
 
 	const queryClient = new QueryClient();
-	let addPostModal = false;
-	let title = '';
-	let content = '';
-	let media;
-	let addingPost = false;
-	const addPost = async () => {
-		addingPost = true;
-		let mediaBase64, mediaContentType;
-		if (media) {
-			mediaBase64 = await toBase64(media);
-			mediaContentType = media.type;
+
+	const async = async () => {
+		try {
+			const user = (await Auth.currentSession()).getIdToken().payload;
+			userStore.set(user);
+		} catch (err) {
+			userStore.set(false);
 		}
-		await API.post('auth', '/posts', { body: { title, content, mediaBase64, mediaContentType } });
-		queryClient.refetchQueries({ queryKey: ['posts'] });
-		addingPost = false;
-		addPostModal = false;
-		title = '';
-		content = '';
 	};
-	const toBase64 = (file) =>
-		new Promise((resolve, reject) => {
-			const reader = new FileReader();
-			reader.readAsDataURL(file);
-			reader.onload = () => resolve(reader.result);
-			reader.onerror = (error) => reject(error);
-		});
+	async();
 </script>
+
+<svelte:head>
+	<title>place4pals</title>
+	<meta name="description" content="non-profit social media" />
+</svelte:head>
 
 <QueryClientProvider client={queryClient}>
 	<div style="min-height:calc(100vh - 40px);">
 		<div
-			style="display:flex;flex-direction:row;padding:10px;align-items:center;position:fixed;background-color:#ffffff66;width:100%;z-index:100;backdrop-filter: blur(10px);"
+			style="display:flex;flex-direction:row;padding:10px;align-items:center;position:fixed;background-color:#ffffff66;width:100%;z-index:100;backdrop-filter: blur(10px);-webkit-backdrop-filter:blur(10px);"
 		>
 			<a
 				href="/"
 				style="display:flex;flex-direction:row;justify-content:center;align-items:center;text-decoration-line:none;font-size:24px;color:#000;margin-right:10px;"
 			>
-				<img alt="" style="height:30px;width:30px;margin-right:5px;" src="/favicon.png" />place4pals
+				<img alt="" style="height:30px;width:30px;margin-right:5px;" src="/favicon.png" /><span
+					class="desktop">place4pals</span
+				>
 			</a>
 			<a class="navLink {$page.url.pathname === '/' ? 'active' : ''}" href="/">= Feed</a>
 			<a class="navLink {$page.url.pathname.startsWith('/pools') ? 'active' : ''}" href="pools"
@@ -94,86 +88,48 @@
 			<a class="navLink {$page.url.pathname.startsWith('/chat') ? 'active' : ''}" href="chat"
 				>⇆ Chat</a
 			>
-			<a class="navLink {$page.url.pathname.startsWith('/profile') ? 'active' : ''}" href="profile"
-				>▢ Profile</a
-			>
 			<button
+				class={$userStore ? '' : 'desktop'}
 				style="margin:0px 10px;"
 				on:click={() => {
-					addPostModal = !addPostModal;
-				}}>+ Add post</button
+					if ($userStore) {
+						modalStore.update((obj) => ({ ...obj, addPostModal: true }));
+					} else {
+						modalStore.update((obj) => ({ ...obj, signupModal: true }));
+					}
+				}}>+ Post</button
 			>
-			<input style="width:300px;" placeholder="🔍 Search" />
-
-			<a
-				class="navLink {$page.url.pathname.startsWith('/notifications') ? 'active' : ''}"
-				style="margin-left:auto;margin-right:25px;"
-				href="notifications">⦿ Notifications (0)</a
-			>
-		</div>
-		{#if addPostModal}
-			<div
-				style="
-				position: fixed;
-				left: 215px;
-				background-color: rgb(255, 255, 255);
-				padding: 10px;
-				border: 1px solid rgb(204, 204, 204);
-				border-radius: 10px;
-				display: flex;
-				flex-direction: column;
-				justify-content: flex-start;
-				align-items: center;
-				width: 600px;
-				height: 500px;
-				top: 50px;
-				z-index: 100;
-				"
-				use:clickOutside
-				on:click_outside={() => {
-					addPostModal = false;
-				}}
-			>
-				<div
-					style="height: 15px;
-				width: 15px;
-				border-top: 1px solid #ccc;
-				border-right: 1px solid #ccc;
-				transform: rotate(-45deg);
-				margin-top: -18px;
-				background-color: #fff;"
-				/>
-				<input
-					bind:value={title}
-					style="width:calc(100% - 20px);margin-top:3px;padding:10px;"
-					placeholder="Title"
-				/>
-				<textarea
-					bind:value={content}
-					style="width:calc(100% - 20px);height:400px;margin-top:10px;font-family:arial;padding:10px;resize:none;"
-					placeholder="Content"
-				/>
-				<div style="margin:10px;align-self:flex-start;">
-					<label for="files" class="btn">Upload media:</label>
-					<input
-						id="files"
-						type="file"
-						on:change={(e) => {
-							media = e.target.files[0];
-						}}
-					/>
-				</div>
-				<div style="display:flex;flex-direction:row;gap:10px;align-self:flex-end;">
+			{#if $userStore === null}
+				<InnerLoader />
+			{:else if $userStore === false}
+				<div style="margin-left:auto;margin-right:30px;">
 					<a
 						href="javascript:void(0)"
 						on:click={() => {
-							addPostModal = false;
-						}}>Cancel</a
+							modalStore.update((obj) => ({ ...obj, signupModal: true }));
+						}}>Sign up</a
 					>
-					<button disabled={addingPost} on:click={addPost}>Submit</button>
+					or
+					<a
+						href="javascript:void(0)"
+						on:click={() => {
+							modalStore.update((obj) => ({ ...obj, loginModal: true }));
+						}}>Log in</a
+					>
 				</div>
-			</div>
-		{/if}
+			{:else if $userStore}
+				<a
+					class="navLink {$page.url.pathname.startsWith('/profile') ? 'active' : ''}"
+					style="display:flex;flex-direction:row;align-items:center;gap:5px;margin-left:auto;margin-right:30px;"
+					href="profile"
+					><img
+						alt=""
+						style="height:25px;width:25px;border:1px solid #000;border-radius:8px"
+						src="https://files.place4pals.com/public/{$userStore.picture}"
+					/><span class="desktop">{$userStore.preferred_username}</span></a
+				>
+			{/if}
+		</div>
 		<div style="height:40px;" />
 		<div style="padding:10px;">
 			<slot />
@@ -183,4 +139,10 @@
 	<div style="text-align:center;font-size:12px;color:#aaa;margin-top:auto;margin-bottom:20px;">
 		Copyright © {new Date().getFullYear()} place4pals inc
 	</div>
+	<AddPostModal bind:showModal={$modalStore.addPostModal} />
+	<LoginModal bind:showModal={$modalStore.loginModal} />
+	<SignupModal bind:showModal={$modalStore.signupModal} />
+	{#if $page.url.searchParams.get('code')}
+		<ConfirmModal showModal={true} />
+	{/if}
 </QueryClientProvider>
