@@ -71,7 +71,7 @@
 <QueryClientProvider client={queryClient}>
 	<div style="min-height:calc(100vh - 40px);">
 		<div
-			style="display:flex;flex-direction:row;padding:10px;align-items:center;position:fixed;background-color:#ffffff66;width:100%;z-index:100;backdrop-filter: blur(10px);-webkit-backdrop-filter:blur(10px);"
+			style="display:flex;flex-direction:row;padding:10px;align-items:center;position:fixed;background-color:#ffffff66;width:100%;z-index:100;backdrop-filter: blur(10px);-webkit-backdrop-filter:blur(10px);max-width:1280px;"
 		>
 			<a
 				href="/"
@@ -99,10 +99,20 @@
 					}
 				}}>+ Post</button
 			>
-			{#if $userStore === null}
-				<InnerLoader />
-			{:else if $userStore === false}
-				<div style="margin-left:auto;margin-right:30px;">
+			<div
+				style="margin-left:auto;margin-right:30px;display:flex;flex-direction:row;justify-content:center;align-items:center;gap:5px"
+			>
+				<div>
+					<label for="sort" class="btn">Theme:</label>
+					<select style="margin-right:10px;width:80px;">
+						{#each ['Light', 'Dark', 'Blue'] as obj}
+							<option value={obj}>{obj}</option>
+						{/each}
+					</select>
+				</div>
+				{#if $userStore === null}
+					<InnerLoader />
+				{:else if $userStore === false}
 					<a
 						href="javascript:void(0)"
 						on:click={() => {
@@ -116,19 +126,22 @@
 							modalStore.update((obj) => ({ ...obj, loginModal: true }));
 						}}>Log in</a
 					>
-				</div>
-			{:else if $userStore}
-				<a
-					class="navLink {$page.url.pathname.startsWith('/profile') ? 'active' : ''}"
-					style="display:flex;flex-direction:row;align-items:center;gap:5px;margin-left:auto;margin-right:30px;"
-					href="profile"
-					><img
-						alt=""
-						style="height:25px;width:25px;border:1px solid #000;border-radius:8px"
-						src="https://files.place4pals.com/public/{$userStore.picture}"
-					/><span class="desktop">{$userStore.preferred_username}</span></a
+				{:else if $userStore}
+				<a class="navLink {$page.url.pathname.startsWith('/notifications') ? 'active' : ''}" href="notifications"
+					>⩍ (0)</a
 				>
-			{/if}
+					<a
+						class="navLink {$page.url.pathname.startsWith('/profile') ? 'active' : ''}"
+						style="display:flex;flex-direction:row;align-items:center;gap:5px;margin-right:-10px;"
+						href="profile"
+						><img
+							alt=""
+							style="height:25px;width:25px;border:1px solid #000;border-radius:8px"
+							src="https://files.place4pals.com/public/{$userStore.picture}"
+						/><div style="width:10px;height:10px;background-color:green;border-radius:100%;margin-left:-12px;margin-bottom:-22px;border:1px solid #000" /><span class="desktop">{$userStore.preferred_username}</span></a
+					>
+				{/if}
+			</div>
 		</div>
 		<div style="height:40px;" />
 		<div style="padding:10px;">

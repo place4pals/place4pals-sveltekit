@@ -4,10 +4,11 @@
 
 body {
 	font-family: arial;
-	margin: 0px;
+	margin: auto;
 	overflow-y: scroll;
 	font-size: 14px;
 	line-height: 1.4;
+	max-width: 1280px;
 }
 
 .navLink {
@@ -50,7 +51,7 @@ a:hover {
 	width: 80px;
 	height: 80px;
 	margin: 10px;
-	border: 10px solid #ddd;
+	border: 5px solid #ddd;
 	border-radius: 50%;
 	animation: loader 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
 	border-color: #ddd transparent transparent transparent;
@@ -81,9 +82,5 @@ a:hover {
 @media only screen and (max-width: 600px) {
 	.desktop {
 		display: none;
-	}
-
-	.postImage {
-		max-width: calc(100vw - 60px);
 	}
 }

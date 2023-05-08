@@ -3,7 +3,8 @@
 	"version": "0.0.1",
 	"scripts": {
 		"start": "vite dev",
-		"build": "vite build && aws s3 --profile place4pals sync --delete ./build s3://p4p-staging-app --exclude \"*.js\" && aws s3 --profile place4pals sync --delete ./build s3://p4p-staging-app --include \"*.js\" --content-type \"application/javascript\" && aws --profile place4pals cloudfront create-invalidation --distribution-id E2BV1TI8IYZ0CC --paths \"/*\" > /dev/null"
+		"build:prod": "vite build && aws s3 --profile place4pals sync --delete ./build s3://p4p-prod-app --exclude \"*.js\" && aws s3 --profile place4pals sync --delete ./build s3://p4p-prod-app --include \"*.js\" --content-type \"application/javascript\" && aws --profile place4pals cloudfront create-invalidation --distribution-id E2BV1TI8IYZ0CC --paths \"/*\" > /dev/null",
+		"build:staging": "vite build && aws s3 --profile place4pals sync --delete ./build s3://p4p-staging-app --exclude \"*.js\" && aws s3 --profile place4pals sync --delete ./build s3://p4p-staging-app --include \"*.js\" --content-type \"application/javascript\" && aws --profile place4pals cloudfront create-invalidation --distribution-id E2BV1TI8IYZ0CC --paths \"/*\" > /dev/null"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "next",
