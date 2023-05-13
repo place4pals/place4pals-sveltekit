@@ -26,7 +26,9 @@
 </script>
 
 {#if $introStore}
-	<div style="margin-bottom:10px;background-color:#eee;padding: 10px;border-radius:10px;position:relative;">
+	<div
+		style="margin-bottom:10px;background-color:#eee;padding: 10px;border-radius:10px;position:relative;"
+	>
 		<div style="float:right;margin-right:20px;transform:scale(0.75);margin-top:-13px;">
 			<Squares />
 		</div>
@@ -80,7 +82,9 @@
 	<Loader />
 {:else}
 	{#each $query.data as { id, name, date, content, user, comments, typing, media }}
-		<div style="margin-bottom:10px;background-color:#e9f7ff;padding: 10px;border-radius:10px;position:relative;">
+		<div
+			style="margin-bottom:10px;background-color:#e9f7ff;padding: 10px;border-radius:10px;position:relative;"
+		>
 			{#if user.id === $userStore.profile}
 				<div
 					style="text-decoration-line:none;position:absolute;right:5px;height:30px;width:30px;display:flex;justify-content:center;align-items:center;"
@@ -93,10 +97,7 @@
 								const confirm = window.confirm(`Are you sure you want to delete "${name}"?`);
 								if (confirm) {
 									deletingId = id;
-									await fetch(`https://lambda.place4pals.com/public/posts`, {
-										method: 'DELETE',
-										body: JSON.stringify({ id })
-									});
+									await API.del('auth', '/posts', { body: { id } });
 									queryClient.refetchQueries({ queryKey: ['posts'] });
 								}
 							}}

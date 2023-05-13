@@ -27,7 +27,10 @@
 				{
 					name: 'public',
 					endpoint: Environment.endpoint + '/public',
-					region: Environment.region
+					region: Environment.region,
+					custom_header: async () => ({
+						Authorization: null
+					})
 				},
 				{
 					name: 'auth',
@@ -127,9 +130,10 @@
 						}}>Log in</a
 					>
 				{:else if $userStore}
-				<a class="navLink {$page.url.pathname.startsWith('/notifications') ? 'active' : ''}" href="notifications"
-					>⩍ (0)</a
-				>
+					<a
+						class="navLink {$page.url.pathname.startsWith('/notifications') ? 'active' : ''}"
+						href="notifications">⩍ (0)</a
+					>
 					<a
 						class="navLink {$page.url.pathname.startsWith('/profile') ? 'active' : ''}"
 						style="display:flex;flex-direction:row;align-items:center;gap:5px;margin-right:-10px;"
@@ -138,7 +142,11 @@
 							alt=""
 							style="height:25px;width:25px;border:1px solid #000;border-radius:8px"
 							src="https://files.place4pals.com/public/{$userStore.picture}"
-						/><div style="width:10px;height:10px;background-color:green;border-radius:100%;margin-left:-12px;margin-bottom:-22px;border:1px solid #000" /><span class="desktop">{$userStore.preferred_username}</span></a
+						/>
+						<div
+							style="width:10px;height:10px;background-color:green;border-radius:100%;margin-left:-12px;margin-bottom:-22px;border:1px solid #000"
+						/>
+						<span class="desktop">{$userStore.preferred_username}</span></a
 					>
 				{/if}
 			</div>
