@@ -1,3 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	:root {
+		--background: #fff;
+		--text: #000;
+		--card: #eee;
+	}
+
+	:root[class~="dark"] {
+		--background: #000;
+		--text: #fff;
+		--card: #313642;
+	}
+}
+
 .postImage {
 	max-width: 500px;
 }
