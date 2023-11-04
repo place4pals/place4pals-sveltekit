@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --background: #fff;
+        --text: #000;
+        --card: #eee;
+        --card2: #e9f7ff;
+        --hover: #eee;
+        --subtitle: #999;
+        --blue: #160ae9;
+        --red: #ff0000;
+    }
+
+    :root[class~="dark"] {
+        --background: #000;
+        --text: #fff;
+        --card: #333;
+        --card2: #111;
+        --hover: #444;
+        --subtitle: #999;
+        --blue: #72bfff;
+    }
+}
+
+body {
+    font-family: arial;
+    overflow-y: scroll;
+    background-color: var(--background);
+    color: var(--text);
+}
+
+input,
+textarea {
+    background: var(--background);
+    border-color: var(--card);
+    border-width: 1px;
+    border-radius: 4px;
+    padding: 4px;
+}
+
+a {
+    color: var(--blue);
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+button {
+    cursor: default;
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--subtitle);
+    border-radius: 4px;
+    padding: 0px 10px;
+}
+
+select {
+    background: var(--background);
+    color: var(--text);
+}
+
+button:hover {
+    opacity: 0.75;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.loader {
+    display: flex;
+    height: 100%;
+    width: 100%;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 40px;
+}
+
+.loader div {
+    box-sizing: border-box;
+    display: block;
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    margin: 10px;
+    border: 5px solid #ddd;
+    border-radius: 50%;
+    animation: loader 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+    border-color: #ddd transparent transparent transparent;
+}
+
+.loader div:nth-child(1) {
+    animation-delay: -0.45s;
+}
+
+.loader div:nth-child(2) {
+    animation-delay: -0.3s;
+}
+
+.loader div:nth-child(3) {
+    animation-delay: -0.15s;
+}
+
+@keyframes loader {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}

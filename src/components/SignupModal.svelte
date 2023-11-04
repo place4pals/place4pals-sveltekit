@@ -1,123 +1,139 @@
 <script>
-	import { modalStore } from '../stores';
-	import Modal from '../components/Modal.svelte';
-	import { Auth } from '@aws-amplify/auth';
-	export let showModal;
-	let checkEmail = false;
+  import { store } from "#src/store";
+  import { sleep } from "#src/utils";
+  import Modal from "../components/Modal.svelte";
+  import { Auth } from "@aws-amplify/auth";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  const queryClient = useQueryClient();
+  export let showModal;
+  let terms = false;
 
-	const submit = async () => {
-		if (password.length < 6) {
-			message = 'Password must be at least 6 characters long';
-		}
-		loading = true;
-		try {
-			await Auth.signUp({
-				username: crypto.randomUUID(),
-				password: password,
-				attributes: {
-					'custom:username': username,
-					email: email,
-					'custom:userType': 'user'
-				},
-				autoSignIn: {
-					enabled: true
-				}
-			});
-			loading = false;
-			checkEmail = true;
-		} catch (err) {
-			loading = false;
-			message = 'That username is already taken';
-		}
-	};
-	let email;
-	let username;
-	let password;
-	let dialog;
-	let loading = false;
-	let message = 'Create an account';
+  const submit = async () => {
+    if (!terms) {
+      message = `You must accept the Terms and Privacy Policy`;
+      return;
+    }
+    if (!password?.length) {
+      message = `You must enter a password`;
+      return;
+    }
+    if (password?.length < 6) {
+      message = "Password must be at least 6 characters long";
+      return;
+    }
+    if (!username?.length) {
+      message = `You must enter a username`;
+      return;
+    }
+    if (!email?.length) {
+      message = `You must enter a valid email`;
+      return;
+    }
+    loading = true;
+    try {
+      const user = await Auth.signUp({
+        username: crypto.randomUUID(),
+        password: password,
+        attributes: {
+          "custom:username": username,
+          email: email,
+        },
+        autoSignIn: {
+          enabled: true,
+        },
+      });
+      await sleep(1000);
+      store.update((obj) => ({ ...obj, sub: user.userSub }));
+      await queryClient.refetchQueries({ queryKey: ["user"] });
+      loading = false;
+      dialog.close();
+    } catch (err) {
+      loading = false;
+      message = "That email or username is already taken";
+    }
+  };
+  let email;
+  let username;
+  let password;
+  let dialog;
+  let loading = false;
+  let message = "Create an account";
 </script>
 
 <Modal bind:showModal bind:dialog>
-	<div class="container">
-		{#if checkEmail}
-			<div class="title">
-				Success! Please check your email- you must confirm your email address before logging in.
-			</div>
-			<button
-				on:click={() => {
-					dialog.close();
-				}}>Close</button
-			>
-		{:else}
-			<div class="title">{message}</div>
-			<form class="form" on:submit={submit}>
-				<input
-					class="input"
-					disabled={loading}
-					bind:value={username}
-					type="text"
-					placeholder="Username"
-				/>
-				<input
-					class="input"
-					disabled={loading}
-					bind:value={email}
-					type="email"
-					placeholder="Email"
-				/>
-				<input
-					class="input"
-					disabled={loading}
-					bind:value={password}
-					type="password"
-					placeholder="Password"
-				/>
-				<div class="terms">
-					<label for="terms"
-						>I agree to the <a href="">Terms</a> and <a href="">Privacy Policy</a></label
-					>
-					<input id="terms" type="checkbox" />
-				</div>
-				<button class="submit" disabled={loading}>Sign up</button>
-				<div>
-					Already have an account?
-					<a
-						href="javascript:void(0)"
-						on:click={() => {
-							dialog.close();
-							modalStore.update((obj) => ({ ...obj, signupModal: false, loginModal: true }));
-						}}>Login here</a
-					>.
-				</div>
-			</form>
-		{/if}
-	</div>
+  <div class="container">
+    <div class="title">{message}</div>
+    <form class="form" on:submit={submit}>
+      <input
+        class="input"
+        disabled={loading}
+        bind:value={username}
+        type="text"
+        placeholder="Username"
+      />
+      <input
+        class="input"
+        disabled={loading}
+        bind:value={email}
+        type="email"
+        placeholder="Email"
+      />
+      <input
+        class="input"
+        disabled={loading}
+        bind:value={password}
+        type="password"
+        placeholder="Password"
+      />
+      <div class="terms">
+        <label for="terms"
+          >I agree to the <a href="">Terms</a> and
+          <a href="">Privacy Policy</a></label
+        >
+        <input id="terms" type="checkbox" bind:value={terms} />
+      </div>
+      <button class="submit" disabled={loading}>Sign up</button>
+      <div>
+        Already have an account?
+        <a
+          href="javascript:void(0)"
+          on:click={() => {
+            dialog.close();
+            store.update((obj) => ({
+              ...obj,
+              signupModal: false,
+              loginModal: true,
+            }));
+          }}>Login here</a
+        >.
+      </div>
+    </form>
+  </div>
 </Modal>
 
 <style>
-	.form {
-		display: flex;
-		flex-direction: column;
-		width: 100%;
-		gap: 10px;
-	}
-	.container {
-		padding: 10px;
-	}
-	.title {
-		margin-bottom: 10px;
-	}
-	.input,
-	.submit {
-		padding: 4px 8px;
-	}
-	.terms {
-		display: flex;
-		flex-direction: row-reverse;
-		align-items: center;
-		justify-content: flex-end;
-		gap: 3px;
-		font-size: 14px;
-	}
+  .form {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+  .container {
+    padding: 10px;
+  }
+  .title {
+    margin-bottom: 10px;
+  }
+  .input,
+  .submit {
+    padding: 4px 8px;
+  }
+  .terms {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 3px;
+    font-size: 14px;
+  }
 </style>

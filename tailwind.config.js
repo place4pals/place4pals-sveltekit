@@ -1,24 +1,25 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ['./src/**/*.{html,js,svelte,ts}'],
   theme: {
-    fontFamily: {
-      sans: ['Arial'],
-      header: ['Arial'],
+    extend: {
+      fontFamily: {
+        sans: ['Arial'],
+        header: ['Arial'],
+      },
+      colors: {
+        background: 'var(--background)',
+        text: 'var(--text)',
+        card: 'var(--card)',
+        card2: 'var(--card2)',
+        hover: 'var(--hover)',
+        subtitle: 'var(--subtitle)',
+        blue: 'var(--blue)',
+        red: 'var(--red)',
+      }
     },
-    colors: {
-      // Theme vars
-      background: 'var(--background)',
-      text: 'var(--text)',
-      card: 'var(--card)',
-      // Color constants
-      white: '#fff',
-      black: '#000',
-    }
   },
   plugins: [],
   darkMode: 'class',
 }
+
