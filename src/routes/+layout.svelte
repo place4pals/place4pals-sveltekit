@@ -1,7 +1,7 @@
 <script>
   import "../app.css";
-  import { Amplify } from "@aws-amplify/core";
-  import { Auth } from "@aws-amplify/auth";
+  import { Amplify } from "aws-amplify";
+  import * as Auth from "aws-amplify/auth";
   import { QueryClient, QueryClientProvider } from "@tanstack/svelte-query";
   import { page } from "$app/stores";
   import AddPostModal from "../components/AddPostModal.svelte";
@@ -11,44 +11,56 @@
   import { store } from "#src/store";
   import NavigationBar from "../components/NavigationBar.svelte";
   const queryClient = new QueryClient();
-  Amplify.configure({
-    Auth: {
-      userPoolId: import.meta.env.VITE_USERPOOLID,
-      userPoolWebClientId: import.meta.env.VITE_USERPOOLWEBCLIENTID,
-    },
-    API: {
-      graphql_endpoint: `${import.meta.env.VITE_GRAPHQL_URL}/v1/graphql`,
-      graphql_headers: async () => {
-        let Authorization;
-        try {
-          Authorization = `Bearer ${(await Auth.currentSession())
-            ?.getIdToken()
-            ?.getJwtToken()}`;
-        } catch (err) {}
-        return {
-          ...(Authorization && { Authorization }),
-        };
+  Amplify.configure(
+    {
+      Auth: {
+        Cognito: {
+          userPoolId: import.meta.env.VITE_USERPOOLID,
+          userPoolClientId: import.meta.env.VITE_USERPOOLWEBCLIENTID,
+        },
       },
-      endpoints: [
-        {
-          name: "public",
-          endpoint: import.meta.env.VITE_API_URL + "/public",
-          custom_header: async () => ({
-            Authorization: null,
-          }),
+      API: {
+        GraphQL: {
+          endpoint: `${import.meta.env.VITE_GRAPHQL_URL}/v1/graphql`,
+          defaultAuthMode: "none",
         },
-        {
-          name: "auth",
-          endpoint: import.meta.env.VITE_API_URL + "/auth",
-          custom_header: async () => ({
-            Authorization:
-              "Bearer " +
-              (await Auth.currentSession()).getIdToken().getJwtToken(),
-          }),
+        REST: {
+          public: {
+            endpoint: `${import.meta.env.VITE_API_URL}/public`,
+          },
+          auth: {
+            endpoint: `${import.meta.env.VITE_API_URL}/auth`,
+          },
         },
-      ],
+      },
     },
-  });
+    {
+      API: {
+        GraphQL: {
+          headers: async () => {
+            const jwtToken = (
+              await Auth.fetchAuthSession()
+            ).tokens?.idToken?.toString();
+            return {
+              ...(jwtToken && {
+                Authorization: `Bearer ${jwtToken}`,
+              }),
+            };
+          },
+        },
+        REST: {
+          headers: async ({ apiName }) =>
+            apiName === "auth"
+              ? {
+                  Authorization: `Bearer ${(
+                    await Auth.fetchAuthSession()
+                  ).tokens?.idToken?.toString()}`,
+                }
+              : { "X-Api-Key": "1" },
+        },
+      },
+    }
+  );
 </script>
 
 <svelte:head>

@@ -2,7 +2,7 @@
   import { store } from "#src/store";
   import { sleep } from "#src/utils";
   import Modal from "../components/Modal.svelte";
-  import { Auth } from "@aws-amplify/auth";
+  import * as Auth from "aws-amplify/auth";
   import { useQueryClient } from "@tanstack/svelte-query";
   const queryClient = useQueryClient();
   export let showModal;
@@ -31,19 +31,23 @@
     }
     loading = true;
     try {
-      const user = await Auth.signUp({
+      await Auth.signUp({
         username: crypto.randomUUID(),
         password: password,
-        attributes: {
-          "custom:username": username,
-          email: email,
-        },
-        autoSignIn: {
-          enabled: true,
+        options: {
+          userAttributes: {
+            "custom:username": username,
+            email: email,
+          },
+          autoSignIn: {
+            enabled: true,
+          },
         },
       });
       await sleep(1000);
-      store.update((obj) => ({ ...obj, sub: user.userSub }));
+      await Auth.autoSignIn();
+      const user = await Auth.getCurrentUser();
+      store.update((obj) => ({ ...obj, sub: user.userId }));
       await queryClient.refetchQueries({ queryKey: ["user"] });
       loading = false;
       dialog.close();

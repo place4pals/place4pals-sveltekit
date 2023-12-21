@@ -1,22 +1,19 @@
 <script>
-  import { Auth } from "@aws-amplify/auth";
+  import * as Auth from "aws-amplify/auth";
   import { QueryClient, createQuery } from "@tanstack/svelte-query";
   import { page } from "$app/stores";
   import { store } from "#src/store";
   import InnerLoader from "../components/InnerLoader.svelte";
-  import { blankImage } from "../utils";
-  import { API } from "@aws-amplify/api";
+  import * as API from "aws-amplify/api";
+  const apiClient = API.generateClient();
 
   const async = async () => {
-    try {
-      if ($store.dark) {
-        document.documentElement.classList.add("dark");
-      }
-      const user = (await Auth.currentSession()).getIdToken().payload;
-      store.update((obj) => ({ ...obj, sub: user?.sub }));
-    } catch (err) {
-      store.update((obj) => ({ ...obj, sub: false }));
+    if ($store.dark) {
+      document.documentElement.classList.add("dark");
     }
+    const userSub = (await Auth.fetchAuthSession()).tokens?.idToken?.payload
+      ?.sub;
+    store.update((obj) => ({ ...obj, sub: userSub ?? false }));
   };
   async();
 
@@ -34,10 +31,10 @@
     queryKey: ["user"],
     queryFn: async () =>
       (
-        await API.graphql({
+        await apiClient.graphql({
           query: `query($id: uuid!) { users_by_pk(id: $id) { id name image }} `,
           variables: {
-            id: (await Auth.currentSession()).getIdToken().payload.sub,
+            id: (await Auth.fetchAuthSession()).tokens?.idToken?.payload.sub,
           },
         })
       ).data.users_by_pk,
@@ -149,10 +146,8 @@
           <img
             alt=""
             class="h-[25px] w-[25px] rounded-md border-[1px] border-text"
-            src={`${
-              $user?.data?.image
-                ? `https://files.place4pals.com/${$user?.data?.image}`
-                : blankImage
+            src={`https://files.place4pals.com/${
+              $user?.data?.image ?? "profile.jpg"
             }`}
           />
           <div

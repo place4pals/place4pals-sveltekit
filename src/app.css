@@ -80,6 +80,8 @@ form {
     align-items: flex-start;
     justify-content: center;
     padding-top: 40px;
+    position: absolute;
+    z-index: 100;
 }
 
 .loader div {

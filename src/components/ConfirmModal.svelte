@@ -1,6 +1,6 @@
 <script>
   import Modal from "../components/Modal.svelte";
-  import { Auth } from "@aws-amplify/auth";
+  import * as Auth from "aws-amplify/auth";
   import { page } from "$app/stores";
   import Loader from "./Loader.svelte";
   import { store } from "#src/store";

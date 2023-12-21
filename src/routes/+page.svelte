@@ -3,23 +3,28 @@
   const queryClient = useQueryClient();
   import Squares from "../components/Squares.svelte";
   import Loader from "../components/Loader.svelte";
-  import { API } from "@aws-amplify/api";
+  import * as API from "aws-amplify/api";
   import { store } from "#src/store";
   import DeletingLoader from "../components/DeletingLoader.svelte";
-  import { blankImage } from "../utils";
-  import { comment } from "postcss";
+  import Icon from "@iconify/svelte";
+  const apiClient = API.generateClient();
+
+  let pool;
   const query = createQuery({
     queryKey: ["posts"],
     queryFn: async () =>
       (
-        await API.graphql({
-          query: `{posts(order_by: {created_at: desc}){
+        await apiClient.graphql({
+          query: `{posts(order_by: {created_at: desc}${
+            pool ? `, where: {pool_id: {_eq: "${pool}"}}` : ``
+          }){
 		  		      id
 				        created_at
                 name
                 media
                 content
                 user { id created_at name image bio }
+                pool { id name icon background_color text_color }
                 comments(order_by: {created_at: asc}, limit: 25) {
                     id
 					          created_at
@@ -42,9 +47,19 @@
     minute: "numeric",
     hour12: true,
   };
-  let postedTyping = false;
   let addingComment = false;
   let deletingId = null;
+
+  const pools = createQuery({
+    queryKey: ["pools"],
+    queryFn: async () =>
+      (
+        await apiClient.graphql({
+          query: `{pools(order_by: {order: asc}){ id name }}`,
+        })
+      ).data.pools,
+    initialData: [],
+  });
 </script>
 
 <div class="flex flex-col gap-2">
@@ -82,6 +97,20 @@
   {/if}
   <div class="bg-card p-2 xl:rounded-xl flex flex-row gap-4">
     <div>
+      <label for="pool" class="btn">Pool:</label>
+      <select
+        bind:value={pool}
+        on:change={() => {
+          queryClient.refetchQueries({ queryKey: ["posts"] });
+        }}
+        id="pool"
+      >
+        {#each [{ id: null, name: "All" }, ...$pools.data] as { id, name }}
+          <option value={id}>{name}</option>
+        {/each}
+      </select>
+    </div>
+    <div>
       <label for="sort" class="btn">Sort:</label>
       <select id="sort">
         {#each ["Newest", "Highest rating", "Oldest", "Lowest rating"] as obj}
@@ -101,7 +130,7 @@
   {#if $query.isLoading}
     <Loader />
   {:else}
-    {#each $query.data as { id, name, created_at, content, user, comments, media, numberOfComments, averageRating }}
+    {#each $query.data as { id, name, created_at, content, user, comments, media, numberOfComments, averageRating, pool }}
       <div class="bg-card2 p-2 xl:rounded-xl relative">
         {#if user.id === $store.sub}
           <div class="absolute right-2 top-2">
@@ -115,7 +144,7 @@
                   );
                   if (confirm) {
                     deletingId = id;
-                    await API.graphql({
+                    await apiClient.graphql({
                       query: `mutation($id: uuid!) {delete_posts_by_pk(id: $id) {id}}`,
                       variables: { id: id },
                     });
@@ -128,13 +157,15 @@
           </div>
         {/if}
         <div class="flex flex-row gap-1">
-          <img
-            alt=""
-            src={user.image
-              ? `https://files.place4pals.com/${user.image}`
-              : blankImage}
-            class="h-[50px] w-[50px] border-[1px] border-text rounded-xl"
-          />
+          <a href={`/users/${user.id.replaceAll("-", "")}`}>
+            <img
+              alt=""
+              src={`https://files.place4pals.com/${
+                user.image ?? "profile.jpg"
+              }`}
+              class="h-[50px] w-[50px] border-[1px] border-text rounded-xl"
+            />
+          </a>
           <div>
             <div style="font-size:12px;">
               <a style="font-size:20px;" href="/posts/{id.replaceAll('-', '')}"
@@ -143,18 +174,40 @@
               by
               <a href="/users/{user.id.replaceAll('-', '')}">{user.name}</a>
             </div>
-            <div class="text-xs text-subtitle">
-              {new Date(created_at)
-                .toLocaleString("en-US", localeStringOptions)
-                .split(" at ")
-                .map((obj, index) => `${index === 0 ? "🗓️ " : ", 🕐 "}${obj}`)
-                .join("") + " EST"}
+            <div class="flex flex-row gap-1">
+              <a
+                href={`/pools/${pool.id}`}
+                class={`text-xs font-bold px-1 rounded-md flex flex-row items-center`}
+                style={`color: ${pool.text_color}; background-color: ${pool.background_color};`}
+              >
+                <Icon icon={`${pool.icon}`} />
+                {pool.name}
+              </a>
+              <div class="text-xs text-subtitle">
+                {new Date(created_at)
+                  .toLocaleString("en-US", localeStringOptions)
+                  .split(" at ")
+                  .map((obj, index) => `${index === 0 ? "🗓️ " : ", 🕐 "}${obj}`)
+                  .join("") + " EST"}
+              </div>
             </div>
           </div>
         </div>
-        <div style="margin: 10px 0px;">
-          {#if media}
-            <img class="postImage" src="https://files.place4pals.com/{media}" />
+        <div class="my-2">
+          {#if media?.endsWith(".mp4") || media?.endsWith(".mov")}
+            <!-- svelte-ignore a11y-media-has-caption -->
+            <video class="sm:max-w-[400px] mb-2" controls>
+              <source
+                src="https://files.place4pals.com/{media}"
+                type="video/mp4"
+              />
+            </video>
+          {:else if media}
+            <img
+              alt="media"
+              class="sm:max-w-[400px] mb-2"
+              src="https://files.place4pals.com/{media}"
+            />
           {/if}
           {#each content.split("\n\n") as paragraph}
             <p>
@@ -175,16 +228,16 @@
               : ""} [{!showComments[id] ? "+" : "-"}]</a
           >
           <span style="margin:0px 5px;">•</span> Rating:
-          <div class="inline-flex flex-row">
+          <div class="inline-flex flex-row items-center">
             {#each [1, 2, 3, 4, 5] as stars}
               <button
                 on:click={async () => {
-                  await API.graphql({
-                    query: `mutation($postId: uuid) {  delete_ratings(where: {post_id: {_eq: $postId}}) {affected_rows}}`,
+                  await apiClient.graphql({
+                    query: `mutation($postId: uuid) {  delete_ratings(where: {parent_id: {_eq: $postId}}) {affected_rows}}`,
                     variables: { postId: id },
                   });
-                  await API.graphql({
-                    query: `mutation($postId: uuid, $rating: Int) {insert_ratings_one(object: {post_id: $postId, rating: $rating}) {id}}`,
+                  await apiClient.graphql({
+                    query: `mutation($postId: uuid, $rating: Int) {insert_ratings_one(object: {parent_id: $postId, rating: $rating}) {id}}`,
                     variables: { postId: id, rating: stars },
                   });
                   queryClient.refetchQueries({ queryKey: ["posts"] });
@@ -194,6 +247,9 @@
                 {`${averageRating?.a?.a?.a < stars ? "☆" : "★"}`}
               </button>
             {/each}
+            <div class="text-xs ml-1">
+              ({averageRating?.a?.a?.a?.toFixed(1) ?? 0})
+            </div>
           </div>
         </div>
         {#if showComments[id]}
@@ -212,7 +268,9 @@
                     )
                     .join("") + " EST"}
                 >
-                  <a style="font-weight:bold" href="/users/{comment.user.id}"
+                  <a
+                    style="font-weight:bold"
+                    href="/users/{comment.user.id.replaceAll('-', '')}"
                     >{comment.user.name}</a
                   >: {comment.content}
                   {#if comment.user.id === $store.sub}
@@ -222,7 +280,7 @@
                       <a
                         on:click={async () => {
                           deletingId = comment.id;
-                          await API.graphql({
+                          await apiClient.graphql({
                             query: `mutation($id: uuid!) {delete_comments_by_pk(id: $id) { id }}`,
                             variables: { id: comment.id },
                           });
@@ -242,8 +300,8 @@
                 if ($store.sub) {
                   addingComment = true;
                   const formData = new FormData(e.target);
-                  await API.graphql({
-                    query: `mutation($postId: uuid, $content: String) {insert_comments_one(object: {post_id: $postId, content: $content}) {id}}`,
+                  await apiClient.graphql({
+                    query: `mutation($postId: uuid, $content: String) {insert_comments_one(object: {parent_id: $postId, content: $content}) {id}}`,
                     variables: {
                       postId: id,
                       content: formData.get("comment")?.toString(),

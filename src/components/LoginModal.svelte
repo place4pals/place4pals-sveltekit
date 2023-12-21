@@ -1,7 +1,7 @@
 <script>
   import { store } from "#src/store";
   import Modal from "../components/Modal.svelte";
-  import { Auth } from "@aws-amplify/auth";
+  import * as Auth from "aws-amplify/auth";
   import { useQueryClient } from "@tanstack/svelte-query";
   const queryClient = useQueryClient();
   export let showModal;
@@ -9,12 +9,14 @@
   const submit = async () => {
     loading = true;
     try {
-      const user = await Auth.signIn(username, password);
-      store.update((obj) => ({ ...obj, sub: user.attributes.sub }));
+      await Auth.signIn({ username, password });
+      const user = await Auth.getCurrentUser();
+      store.update((obj) => ({ ...obj, sub: user.userId }));
       await queryClient.refetchQueries({ queryKey: ["user"] });
       loading = false;
       dialog.close();
     } catch (err) {
+      console.log(err);
       loading = false;
       message = "Your username or password is incorrect";
     }

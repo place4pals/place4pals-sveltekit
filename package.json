@@ -4,18 +4,17 @@
   "scripts": {
     "start:prod": "vite dev --mode production",
     "start:staging": "vite dev --mode staging",
-    "build:prod": "vite build --mode production && aws s3 --profile place4pals sync --delete ./build s3://p4p-prod-app --exclude \"*.js\" && aws s3 --profile place4pals sync --delete ./build s3://p4p-prod-app --include \"*.js\" --content-type \"application/javascript\" && aws --profile place4pals cloudfront create-invalidation --distribution-id E2BV1TI8IYZ0CC --paths \"/*\" > /dev/null",
+    "build:prod": "vite build --mode production && aws s3 --profile place4pals sync --delete ./build s3://p4p-prod-app --exclude \"*.js\" && aws s3 --profile place4pals sync --delete ./build s3://p4p-prod-app --include \"*.js\" --content-type \"application/javascript\" && aws --profile place4pals cloudfront create-invalidation --distribution-id E1NJZK48LGODTH --paths \"/*\" > /dev/null",
     "build:staging": "vite build --mode staging && aws s3 --profile place4pals sync --delete ./build s3://p4p-staging-app --exclude \"*.js\" && aws s3 --profile place4pals sync --delete ./build s3://p4p-staging-app --include \"*.js\" --content-type \"application/javascript\" && aws --profile place4pals cloudfront create-invalidation --distribution-id E2BV1TI8IYZ0CC --paths \"/*\" > /dev/null",
     "ngrok": "ngrok http --domain meet-python-incredibly.ngrok-free.app 5173"
   },
   "devDependencies": {
-    "@aws-amplify/api": "^5.4.5",
-    "@aws-amplify/auth": "^5.6.5",
-    "@aws-amplify/core": "^5.8.5",
+    "@iconify/svelte": "^3.1.4",
     "@sveltejs/adapter-static": "^2.0.3",
     "@sveltejs/kit": "^1.20.4",
     "@tanstack/svelte-query": "^5.3.0",
     "autoprefixer": "^10.4.16",
+    "aws-amplify": "^6.0.8",
     "postcss": "^8.4.31",
     "svelte": "^4.0.5",
     "svelte-check": "^3.4.3",
